@@ -1,0 +1,6 @@
+interface Client {
+  void Client(DOMString my_ccd);
+  void setServer(DOMString hostname, long port);
+  void connectServer();
+  void takeExposure(double seconds);
+};

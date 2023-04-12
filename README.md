@@ -1,0 +1,1 @@
+4.11.23 - can connect to svbony sv305 thru indiserver + take an exposure shot
