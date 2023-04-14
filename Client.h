@@ -17,6 +17,19 @@ class Client : public INDI::BaseClient
         INDI::Properties mCCDProperties;
         const char *MYCCD;
         bool takenExposure = false;
+
+    public:
+        void setGain(int value);
+        void setContrast(int value);
+        void setGamma(int value);
+        void setSaturation(int value);
+        void setSharpness(int value);
+        void setWBB(int value);
+        void setWBG(int value);
+        void setWBR(int value);
+        void setOffset(int value);
+        void setCaptureFormat(char *format);
+        void connect();
         
     protected:
         void newMessage(INDI::BaseDevice baseDevice, int messageID) override;

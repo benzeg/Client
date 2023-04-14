@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <thread>
 
 #include <fcntl.h>
 
@@ -25,11 +26,19 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
+#ifndef __EMSCRIPTEN__
 int main(int argc , char *argv[]) {
-  #ifdef __EMSCRIPTEN__
-  // do nothing
-  #endif
+  Client client("SVBONY SV305 0");
+  client.connectServer();
+  sleep(10);
+  client.setGain(10);
+  sleep(1);
+  client.takeExposure(1);
+  std::cout << "Press Enter key to terminate the client.\n";
+  std::cin.ignore();
 };
+#endif
+
 Client::Client(const char *my_ccd)
 {
   MYCCD = my_ccd;
@@ -112,6 +121,127 @@ void Client::init()
       return onBlobUpdated(property);
 
     }, INDI::BaseDevice::WATCH_UPDATE);
+
+    device.watchProperty("CCD_GAIN", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("Gain value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncGain($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
+    device.watchProperty("CCD_CONTRAST", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("Contrast value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncContrast($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_GAMMA", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("Gamma value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncGamma($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_SATURATION", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("Saturation value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncSaturation($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_SHARPNESS", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("Sharpness value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncSharpness($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_WBB", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("WBB value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncWBB($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_WBG", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("WBG value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncWBG($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_WBR", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("WBR value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncWBR($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_OFFSET", [this](INDI::PropertyNumber property)
+    {
+      // gain ready
+      auto val = property[0].getValue();
+      IDLog("Offset value: %f\n", val);
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncOffset($0);
+      }, val);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+    device.watchProperty("CCD_CAPTURE_FORMAT", [this](INDI::Property property)
+    {
+      // image format ready
+      auto captureFormatSP = property.getSwitch();
+      auto onSwitch = captureFormatSP->findOnSwitch();
+      if (strcmp(onSwitch->getName(), "FORMAT_RAW8") == 0) {
+        IDLog("Image format ready.\n");
+      } else {
+        setCaptureFormat("FORMAT_RAW8");
+      }
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
   });
 }
 
@@ -148,7 +278,103 @@ void onBlobUpdated(INDI::PropertyBlob property)
 
   #ifdef __EMSCRIPTEN__
   MAIN_THREAD_EM_ASM({
-    updateCanvas(UTF8ToString($0));
+    updateImage(UTF8ToString($0));
   }, cwd.c_str());
   #endif
+}
+
+/**************************************************************************************
+**/
+
+void Client::setGain(int value)
+{
+  INDI::PropertyNumber ccdGain = mSimpleCCD.getProperty("CCD_GAIN");
+  
+  IDLog("Setting gain to %d\n", value);
+  ccdGain[0].setValue(value);
+  sendNewProperty(ccdGain);
+};
+
+void Client::setContrast(int value)
+{
+  INDI::PropertyNumber ccdContrast = mSimpleCCD.getProperty("CCD_CONTRAST");
+  
+  IDLog("Setting contrast to %d\n", value);
+  ccdContrast[0].setValue(value);
+  sendNewProperty(ccdContrast);
+};
+
+void Client::setGamma(int value)
+{
+  INDI::PropertyNumber ccdGamma = mSimpleCCD.getProperty("CCD_GAMMA");
+  
+  IDLog("Setting gamma to %d\n", value);
+  ccdGamma[0].setValue(value);
+  sendNewProperty(ccdGamma);
+};
+void Client::setSaturation(int value)
+{
+  INDI::PropertyNumber ccdSaturation = mSimpleCCD.getProperty("CCD_SATURATION");
+  
+  IDLog("Setting saturation to %d\n", value);
+  ccdSaturation[0].setValue(value);
+  sendNewProperty(ccdSaturation);
+};
+void Client::setSharpness(int value)
+{
+  INDI::PropertyNumber ccdSharpness = mSimpleCCD.getProperty("CCD_SHARPNESS");
+  
+  IDLog("Setting contrast to %d\n", value);
+  ccdSharpness[0].setValue(value);
+  sendNewProperty(ccdSharpness);
+};
+void Client::setWBB(int value)
+{
+  INDI::PropertyNumber ccdWBB = mSimpleCCD.getProperty("CCD_WBB");
+  
+  IDLog("Setting contrast to %d\n", value);
+  ccdWBB[0].setValue(value);
+  sendNewProperty(ccdWBB);
+};
+void Client::setWBG(int value)
+{
+  INDI::PropertyNumber ccdWBG = mSimpleCCD.getProperty("CCD_WBG");
+  
+  IDLog("Setting contrast to %d\n", value);
+  ccdWBG[0].setValue(value);
+  sendNewProperty(ccdWBG);
+};
+void Client::setWBR(int value)
+{
+  INDI::PropertyNumber ccdWBR = mSimpleCCD.getProperty("CCD_WBR");
+  
+  IDLog("Setting contrast to %d\n", value);
+  ccdWBR[0].setValue(value);
+  sendNewProperty(ccdWBR);
+};
+void Client::setOffset(int value)
+{
+  INDI::PropertyNumber ccdOffset = mSimpleCCD.getProperty("CCD_OFFSET");
+  
+  IDLog("Setting contrast to %d\n", value);
+  ccdOffset[0].setValue(value);
+  sendNewProperty(ccdOffset);
+};
+
+void Client::setCaptureFormat(char *format)
+{
+  INDI::PropertySwitch ccdCaptureFormat = mSimpleCCD.getProperty("CCD_CAPTURE_FORMAT");
+  
+  IDLog("Setting capture format to %s\n", format);
+
+  auto formatSwitch = ccdCaptureFormat.findWidgetByName(format);
+
+  ccdCaptureFormat->reset();
+  formatSwitch->setState(ISS_ON);
+
+  sendNewSwitch(ccdCaptureFormat);
+};
+
+void Client::connect() {
+  std::thread(&Client::connectServer, this).detach();
 }

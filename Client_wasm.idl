@@ -3,4 +3,14 @@ interface Client {
   void setServer(DOMString hostname, long port);
   void connectServer();
   void takeExposure(double seconds);
+  void setGain(long value);
+  void setContrast(long value);
+  void setGamma(long value);
+  void setSaturation(long value);
+  void setSharpness(long value);
+  void setWBB(long value);
+  void setWBG(long value);
+  void setWBR(long value);
+  void setOffset(long value);
+  void connect();
 };
