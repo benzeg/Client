@@ -48,8 +48,8 @@ if (true)
     --source-map-base file://${CMAKE_CURRENT_SOURCE_DIR}/public/
     -sLEGACY_RUNTIME
     -sSTACK_SIZE=5242880
-    -sEXPORTED_RUNTIME_METHODS=FS
-    -sEXPORTED_FUNCTIONS=_malloc
+    -sEXPORTED_RUNTIME_METHODS=FS,getValue
+    -sEXPORTED_FUNCTIONS=_malloc,_free
     -sINITIAL_MEMORY=65536000
     -sWEBSOCKET_SUBPROTOCOL=binary
   )

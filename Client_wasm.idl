@@ -13,4 +13,5 @@ interface Client {
   void setWBR(long value);
   void setOffset(long value);
   void connect();
+  void toggleStream();
 };

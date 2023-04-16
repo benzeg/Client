@@ -31,9 +31,8 @@ int main(int argc , char *argv[]) {
   Client client("SVBONY SV305 0");
   client.connectServer();
   sleep(10);
-  client.setGain(10);
-  sleep(1);
-  client.takeExposure(1);
+  //client.takeExposure(1);
+  client.toggleStream();
   std::cout << "Press Enter key to terminate the client.\n";
   std::cin.ignore();
 };
@@ -61,6 +60,8 @@ void Client::takeExposure(double seconds)
         IDLog("Error: unable to find CCD Simulator CCD_EXPOSURE property...\n");
         return;
     }
+
+    setCaptureFormat("FORMAT_RAW8");
 
     // Take a 1 second exposure
     IDLog("Taking a %g second exposure.\n", seconds);
@@ -120,6 +121,16 @@ void Client::init()
     {
       return onBlobUpdated(property);
 
+    }, INDI::BaseDevice::WATCH_UPDATE);
+
+    device.watchProperty("CCD0", [this](INDI::PropertyBlob property)
+    {
+      IDLog("CCD0 updated.\n");
+    }, INDI::BaseDevice::WATCH_UPDATE);
+
+    device.watchProperty("CCD2", [this](INDI::PropertyBlob property)
+    {
+      IDLog("CCD2 updated.\n");
     }, INDI::BaseDevice::WATCH_UPDATE);
 
     device.watchProperty("CCD_GAIN", [this](INDI::PropertyNumber property)
@@ -241,7 +252,19 @@ void Client::init()
       } else {
         setCaptureFormat("FORMAT_RAW8");
       }
+
+      IDLog("Capture format state changed to %s.\n", onSwitch->getName());
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
+    device.watchProperty("CCD_VIDEO_STREAM", [this](INDI::Property property)
+    {
+      // image format ready
+      auto videoStreamSP = property.getSwitch();
+      auto onSwitch = videoStreamSP->findOnSwitch();
+      
+      IDLog("Video stream state changed to %s.\n", onSwitch->getName());
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
   });
 }
 
@@ -259,28 +282,18 @@ void Client::newMessage(INDI::BaseDevice baseDevice, int messageID)
 
 void onBlobUpdated(INDI::PropertyBlob property)
 {
-  char fileName[64];
-  time_t timer = time(nullptr); 
+  IDLog("Received image");
+  auto blob = property[0].getBlob();
+  auto blobChar = static_cast<char *>(blob);
+  auto blobLen = property[0].getBlobLen();
+    #ifdef __EMSCRIPTEN__
+    MAIN_THREAD_EM_ASM({
+      updateImage($0, $1);
+    }, blobChar, property[0].getBlobLen());
+    #endif
 
-  sprintf(fileName, "exposure_%ld.fits", (long int)(timer));
-  std::filesystem::path cwd = std::filesystem::current_path() / std::string(fileName); 
-
-  #ifdef __EMSCRIPTEN__
-  emscripten_log(EM_LOG_CONSOLE, "Current path is %s", cwd.c_str());
-  #endif
-
-  // Save FITS file to disk
-  std::ofstream myfile(cwd.c_str(), std::ios::out | std::ios::binary);
-  myfile.write(static_cast<char *>(property[0].getBlob()), property[0].getBlobLen());
-  myfile.close();
-
-  IDLog("Received image, saved as %s\n", cwd.c_str());
-
-  #ifdef __EMSCRIPTEN__
-  MAIN_THREAD_EM_ASM({
-    updateImage(UTF8ToString($0));
-  }, cwd.c_str());
-  #endif
+    
+  
 }
 
 /**************************************************************************************
@@ -377,4 +390,25 @@ void Client::setCaptureFormat(char *format)
 
 void Client::connect() {
   std::thread(&Client::connectServer, this).detach();
+}
+
+void Client::toggleStream() {
+  INDI::PropertySwitch videoStreamSP = mSimpleCCD.getProperty("CCD_VIDEO_STREAM");
+  auto onSwitch = videoStreamSP->findOnSwitch();
+  videoStreamSP->reset();
+  if (strcmp(onSwitch->getName(), "STREAM_ON") == 0) {
+    // toggle stream off
+
+    IDLog("Turning off stream.\n");
+    auto streamOffSwitch = videoStreamSP.findWidgetByName("STREAM_OFF");   
+    streamOffSwitch->setState(ISS_ON);
+  } else {
+    // toggle stream on
+
+    IDLog("Turning on stream.\n");
+    auto streamOnSwitch = videoStreamSP.findWidgetByName("STREAM_ON");
+    streamOnSwitch->setState(ISS_ON);
+  }
+
+  sendNewSwitch(videoStreamSP);
 }

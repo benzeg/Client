@@ -17,6 +17,7 @@ class Client : public INDI::BaseClient
         INDI::Properties mCCDProperties;
         const char *MYCCD;
         bool takenExposure = false;
+        char *frameBuffer = nullptr;
 
     public:
         void setGain(int value);
@@ -30,6 +31,7 @@ class Client : public INDI::BaseClient
         void setOffset(int value);
         void setCaptureFormat(char *format);
         void connect();
+        void toggleStream();
         
     protected:
         void newMessage(INDI::BaseDevice baseDevice, int messageID) override;
