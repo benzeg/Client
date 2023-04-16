@@ -1,15 +1,27 @@
 <script>
+  import { onDestroy } from "svelte";
+  import { Button } from "flowbite-svelte"
+  import { videoStreamOn } from "./store/cameraState";
+
+  let streamOn = 0;
+  videoStreamOn.subscribe((value) => {
+    streamOn = value;
+  });
+
   function handleClick() {
     window.client.toggleStream();
   }
 
+  onDestroy(() => {
+    // turn off stream when component is destroyed
+    window.client.toggleStream(0);
+  });
+
 </script>
 
-<button class="w-24 h-24" on:click={handleClick} size="lg">
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-    <path stroke-linecap="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
-  </svg>
-</button>
+<Button color={streamOn ? null: "alternative"} class="w-24 h-24" on:click={handleClick}>
+  {streamOn ? "Stop stream" : "Start stream"}
+</Button>
 
 <style>
 </style>

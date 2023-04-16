@@ -1,21 +1,27 @@
 <script>
-  import { Range, Label } from 'flowbite-svelte'
-  import { get } from 'svelte/store'
-  import { gain } from '../store/mainControls.js'
+  import { Label } from 'flowbite-svelte'
+  import MainControlRange from '../components/MainControlRange.svelte'
+  import { gain } from '../store/cameraState.js'
 
-  const value = get(gain);
+  let value = 0;
+  gain.subscribe((v) => {
+    value = v;
+  });
+
   function handleChange(e) {
+    console.log(e.target.value)
     window.client.setGain(e.target.value);
   }
 
-  console.log(window)
+  
+
 </script>
-<div class="grid grid-cols-12 grow">
-  <Label class="col-span-1">Gain</Label>
-    <div class="col-span-10">
-      <Range size="lg" id="gain" min="0" max="720" value={value} on:change={handleChange} />
-    </div>
-  <span class="col-span-1">{value}</span>
+<div class="flex justify-between md:grid grid-cols-12 grow">
+  <Label id="gain" class="md:col-span-1">Gain</Label>
+  <div class="md:col-span-10">
+    <MainControlRange klass="w-60 col-span-11" id="gain" min="0" max="720" value={value} onChange={handleChange}  />
+  </div>
+  
 </div>
 <style>
  

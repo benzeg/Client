@@ -32,7 +32,7 @@ int main(int argc , char *argv[]) {
   client.connectServer();
   sleep(10);
   //client.takeExposure(1);
-  client.toggleStream();
+  //client.toggleStream();
   std::cout << "Press Enter key to terminate the client.\n";
   std::cin.ignore();
 };
@@ -123,19 +123,9 @@ void Client::init()
 
     }, INDI::BaseDevice::WATCH_UPDATE);
 
-    device.watchProperty("CCD0", [this](INDI::PropertyBlob property)
-    {
-      IDLog("CCD0 updated.\n");
-    }, INDI::BaseDevice::WATCH_UPDATE);
-
-    device.watchProperty("CCD2", [this](INDI::PropertyBlob property)
-    {
-      IDLog("CCD2 updated.\n");
-    }, INDI::BaseDevice::WATCH_UPDATE);
-
     device.watchProperty("CCD_GAIN", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("Gain value: %f\n", val);
 
@@ -148,7 +138,7 @@ void Client::init()
 
     device.watchProperty("CCD_CONTRAST", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("Contrast value: %f\n", val);
 
@@ -158,9 +148,10 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_GAMMA", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("Gamma value: %f\n", val);
 
@@ -170,9 +161,10 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_SATURATION", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("Saturation value: %f\n", val);
 
@@ -182,9 +174,10 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_SHARPNESS", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("Sharpness value: %f\n", val);
 
@@ -194,9 +187,10 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_WBB", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("WBB value: %f\n", val);
 
@@ -206,9 +200,10 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_WBG", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("WBG value: %f\n", val);
 
@@ -218,9 +213,10 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_WBR", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("WBR value: %f\n", val);
 
@@ -230,9 +226,10 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_OFFSET", [this](INDI::PropertyNumber property)
     {
-      // gain ready
+     
       auto val = property[0].getValue();
       IDLog("Offset value: %f\n", val);
 
@@ -242,27 +239,26 @@ void Client::init()
       }, val);
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
+
     device.watchProperty("CCD_CAPTURE_FORMAT", [this](INDI::Property property)
     {
-      // image format ready
       auto captureFormatSP = property.getSwitch();
       auto onSwitch = captureFormatSP->findOnSwitch();
-      if (strcmp(onSwitch->getName(), "FORMAT_RAW8") == 0) {
-        IDLog("Image format ready.\n");
-      } else {
-        setCaptureFormat("FORMAT_RAW8");
-      }
-
-      IDLog("Capture format state changed to %s.\n", onSwitch->getName());
+      IDLog("Image format state changed to %s.\n", onSwitch->getName());
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
 
     device.watchProperty("CCD_VIDEO_STREAM", [this](INDI::Property property)
     {
-      // image format ready
       auto videoStreamSP = property.getSwitch();
       auto onSwitch = videoStreamSP->findOnSwitch();
       
       IDLog("Video stream state changed to %s.\n", onSwitch->getName());
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncVideoStreamOn($0);
+      }, (strcmp(onSwitch->getName(), "STREAM_ON") == 0 ? 1 : 0));
+      #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
 
   });
@@ -286,18 +282,13 @@ void onBlobUpdated(INDI::PropertyBlob property)
   auto blob = property[0].getBlob();
   auto blobChar = static_cast<char *>(blob);
   auto blobLen = property[0].getBlobLen();
+  IDLog("Received image of size %d", blobLen);
     #ifdef __EMSCRIPTEN__
     MAIN_THREAD_EM_ASM({
       updateImage($0, $1);
     }, blobChar, property[0].getBlobLen());
     #endif
-
-    
-  
 }
-
-/**************************************************************************************
-**/
 
 void Client::setGain(int value)
 {
@@ -345,7 +336,7 @@ void Client::setWBB(int value)
 {
   INDI::PropertyNumber ccdWBB = mSimpleCCD.getProperty("CCD_WBB");
   
-  IDLog("Setting contrast to %d\n", value);
+  IDLog("Setting WBB to %d\n", value);
   ccdWBB[0].setValue(value);
   sendNewProperty(ccdWBB);
 };
@@ -392,23 +383,56 @@ void Client::connect() {
   std::thread(&Client::connectServer, this).detach();
 }
 
+void Client::toggleStream(int onState) {
+  INDI::PropertySwitch videoStreamSP = mSimpleCCD.getProperty("CCD_VIDEO_STREAM");
+  auto onSwitch = videoStreamSP->findOnSwitch();
+  videoStreamSP->reset();
+
+  if (onState == 1) {
+    IDLog("Turning on stream.\n");
+    auto streamOnSwitch = videoStreamSP.findWidgetByName("STREAM_ON");
+    streamOnSwitch->setState(ISS_ON);
+  } else {
+    IDLog("Turning off stream.\n");
+    auto streamOffSwitch = videoStreamSP.findWidgetByName("STREAM_OFF");   
+    streamOffSwitch->setState(ISS_ON);
+  }
+
+  sendNewSwitch(videoStreamSP);
+}
+
 void Client::toggleStream() {
+  setStreamEncoder("MJPEG");
+
   INDI::PropertySwitch videoStreamSP = mSimpleCCD.getProperty("CCD_VIDEO_STREAM");
   auto onSwitch = videoStreamSP->findOnSwitch();
   videoStreamSP->reset();
   if (strcmp(onSwitch->getName(), "STREAM_ON") == 0) {
-    // toggle stream off
 
     IDLog("Turning off stream.\n");
     auto streamOffSwitch = videoStreamSP.findWidgetByName("STREAM_OFF");   
     streamOffSwitch->setState(ISS_ON);
+
   } else {
-    // toggle stream on
 
     IDLog("Turning on stream.\n");
     auto streamOnSwitch = videoStreamSP.findWidgetByName("STREAM_ON");
     streamOnSwitch->setState(ISS_ON);
+
   }
 
   sendNewSwitch(videoStreamSP);
+}
+
+void Client::setStreamEncoder(char *encoder) {
+  INDI::PropertySwitch ccdStreamEncoder = mSimpleCCD.getProperty("CCD_STREAM_ENCODER");
+  
+  IDLog("Setting capture format to %s\n", encoder);
+
+  auto encoderSwitch = ccdStreamEncoder.findWidgetByName(encoder);
+
+  ccdStreamEncoder->reset();
+  encoderSwitch->setState(ISS_ON);
+
+  sendNewSwitch(ccdStreamEncoder);
 }

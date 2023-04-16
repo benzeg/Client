@@ -30,9 +30,11 @@ class Client : public INDI::BaseClient
         void setWBR(int value);
         void setOffset(int value);
         void setCaptureFormat(char *format);
+        void setStreamEncoder(char *encoder);
         void connect();
+        void toggleStream(int onState);
         void toggleStream();
-        
+
     protected:
         void newMessage(INDI::BaseDevice baseDevice, int messageID) override;
         

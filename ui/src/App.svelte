@@ -10,9 +10,11 @@
 <main class="flex flex-col items-center">
   <Client />
   <Image />
-  <Exposure />
-  <ExposureBtn />
-  <StreamBtn />
+  <div class="w-full flex justify-evenly items-center">
+    <Exposure />
+    <!--<ExposureBtn /> -->
+    <StreamBtn />
+  </div>
   <ControlDrawer />
 </main>
 

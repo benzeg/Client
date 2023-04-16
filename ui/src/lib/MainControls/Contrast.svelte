@@ -1,20 +1,25 @@
 <script>
-  import { Range, Label } from 'flowbite-svelte'
+  import { Label } from 'flowbite-svelte'
+import MainControlRange from '../components/MainControlRange.svelte'
   import { get } from 'svelte/store' 
-  import { contrast } from '../store/mainControls.js'
+  import { contrast } from '../store/cameraState.js'
+  let value = 0;
 
-  const value = get(contrast);
+  contrast.subscribe((v) => {
+    value = v;
+  });
+
   function handleChange(e) {
     window.client.setContrast(e.target.value);
   }
 
+  
+
 </script>
-<div class="grid grid-cols-12 grow">
+<div class="flex justify-between md:grid grid-cols-12 grow">
   <Label class="col-span-1">Contrast</Label>
-    <div class="col-span-10">
-      <Range size="lg" id="Contrast" min="0" max="100" value={value} on:change={handleChange} />
-    </div>
-  <span class="col-span-1">{value}</span>
+  <MainControlRange klass="w-60 col-span-11" id="Contrast" min="0" max="100" value={value} onChange={handleChange}/>
+  
 </div>
 <style>
 </style>
