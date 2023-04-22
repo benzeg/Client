@@ -14,4 +14,7 @@ interface Client {
   void setOffset(long value);
   void connect();
   void toggleStream();
+  void setExposure(double seconds);
+  void setCompression(DOMString status);
+  void setStreamEncoder(DOMString encoder);
 };

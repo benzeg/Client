@@ -4,8 +4,8 @@
   export let value = 0;
   export let id = '';
   export let klass = '';
+  export let step = 0.1;
   export let onChange = (e) => console.log;
-  let step = 0.1;
   let x0 = 0;
   let originalValue = Number(value);
   let moving = false;
@@ -22,7 +22,7 @@
     const x1 = e.pageX;
     const dx = x1 - x0;
     const dValue = dx * step;
-    value = Math.min(Math.max(originalValue + dValue, min), max).toFixed(1);
+    value = Number(Math.min(Math.max(originalValue + dValue, min), max).toFixed(2));
     e.preventDefault();
   }
 
@@ -55,7 +55,7 @@
     const x1 = e.pageX;
     const dx = x1 - x0;
     const dValue = dx * step;
-    value = Math.min(Math.max(originalValue + dValue, min), max).toFixed(1);
+    value = Number(Math.min(Math.max(originalValue + dValue, min), max).toFixed(2));
     e.preventDefault();
   }
 

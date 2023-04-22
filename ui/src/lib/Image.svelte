@@ -8,41 +8,44 @@
   onMount(() => {
     image = document.getElementById('image');
     image.style.height = image.offsetWidth * (1080 / 1920) + 'px';
-    //canvas = document.getElementById('canvas');
-    //canvas.style.height = canvas.offsetWidth * (1080 / 1920) + 'px';
+    canvas = document.getElementById('canvas');
+    canvas.style.height = canvas.offsetWidth * (1080 / 1920) + 'px';
   });
 
   let frameCount = 0;
 
-  window.updateImage = (blobP, blobLen) => {
-    if (frameCount > 10) {
-      // discard
-      return;
-    }
-    if (blobLen < 1920 * 1080) {
-      frameCount++;
-      const newFrame = [blobP, blobLen, null];
-      if (frames === null) {
-        frames = newFrame;
-        framesEnd = newFrame;
-      } else {
-        framesEnd[2] = newFrame;
-        framesEnd = newFrame;
-      }
-
-      renderStream();
+  window.updateImage = (blobP, blobLen, formatP) => {
+    frameCount++;
+    const newFrame = [blobP, blobLen, null];
+    if (frames === null) {
+      frames = newFrame;
+      framesEnd = newFrame;
     } else {
-      renderImage(blobP, blobLen);    
+      framesEnd[2] = newFrame;
+      framesEnd = newFrame;
     }
+
+    if (blobLen < 1080 * 1920) {
+      return renderStream();
+    }
+
+    renderImage();    
   }
 
-  function renderImage(blobP, blobLen) {
-    const fileBody = new Uint8ClampedArray(window.Module.HEAPU8.slice(blobP + (blobLen - 1920 * 1080), blobP + blobLen));
+  function renderImage() {
+    const [blobP, blobLen, next] = frames;
+    frames = next;
+    if (frames === null) {
+      framesEnd = null;
+    }
+
+    const fileBody = new Uint8ClampedArray(window.Module.HEAPU8.slice(blobP, blobP + blobLen));
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const imageData = new ImageData(fileBody, 1920);
     ctx.putImageData(imageData, 0, 0);
-    
+
+    frameCount--;
   }
 
   function renderStream() {
@@ -62,7 +65,7 @@
     }
 
     const fileBody = new Uint8ClampedArray(window.Module.HEAPU8.slice(blobP, blobP + blobLen));
-    let frame = URL.createObjectURL(new Blob([fileBody], {type: 'image/jpeg'})) 
+    let frame = URL.createObjectURL(new Blob([fileBody], {type: 'image/stream_jpg'})) 
     image.src = frame;
     setTimeout(()=> {
       URL.revokeObjectURL(frame);
@@ -73,8 +76,8 @@
   }
 </script>
 
-<!-- <canvas id="canvas" class="w-full lg:w-10/12"/> -->
-<div id="debug"/>
-<img id="image" class="w-full lg:w-10/12" />
+<canvas id="canvas" class="w-full md:w-2/4"/>
+<!--<div id="debug"/> -->
+<img id="image" class="w-full md:w-2/4" />
 <style>
 </style>
