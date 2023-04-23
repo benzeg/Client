@@ -1,21 +1,26 @@
 <script>
-  import { Range, Label } from 'flowbite-svelte'
+  import { Label } from 'flowbite-svelte'
+import MainControlRange from '../components/MainControlRange.svelte'
   import { get } from 'svelte/store'
-  import { offset } from '../store/mainControls.js' 
+  import { offset } from '../store/cameraState.js' 
 
-  const value = get(offset);
-
+  let value = 0;
+  offset.subscribe((v) => {
+    value = v;
+  });
   function handleChange(e) {
     window.client.setOffset(e.target.value);
   }
 
+  
+
 </script>
-<div class="grid grid-cols-12 grow">
+<div class="flex justify-between md:grid grid-cols-12 grow">
   <Label class="col-span-1">Offset</Label>
     <div class="col-span-10">
-      <Range size="lg" id="Offset" min="0" max="100" value={value} on:change={handleChange} />
+      <MainControlRange klass="w-60 col-span-11" id="Offset" min="0" max="255" value={value} onChange={handleChange}  />
     </div>
-  <span class="col-span-1">{value}</span>
+  
 </div>
 <style>
  

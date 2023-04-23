@@ -1,21 +1,28 @@
 <script>
-  import { Range, Label } from 'flowbite-svelte'
+  import { Label } from 'flowbite-svelte'
+import MainControlRange from '../components/MainControlRange.svelte'
   import { get } from 'svelte/store'
-  import { wbg } from '../store/mainControls.js'
+  import { wbg } from '../store/cameraState.js'
 
-  const value = get(wbg);
+  let value = 0;
+  wbg.subscribe((v) => {
+    value = v;
+  });
 
   function handleChange(e) {
+    console.log(e.target.value)
     window.client.setWBG(e.target.value);
   }
 
+  
+
 </script>
-<div class="grid grid-cols-12 grow">
+<div class="flex justify-between md:grid grid-cols-12 grow">
   <Label class="col-span-1">WBG</Label>
     <div class="col-span-10">
-      <Range size="lg" id="WBG" min="0" max="100" value={value} on:change={handleChange} />
+      <MainControlRange klass="w-60 col-span-11" id="WBG" min="0" max="511" value={value} onChange={handleChange}  />
     </div>
-  <span class="col-span-1">{value}</span>
+  
 </div>
 <style>
  

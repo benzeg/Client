@@ -53,3 +53,9 @@ window.syncOffset = (value) => {
   console.log("syncOffset", value);
   offset.set(value);
 }
+
+export const videoStreamOn = writable(0);
+window.syncVideoStreamOn = (value) => {
+  console.log("syncVideoStream", value);
+  videoStreamOn.set(value);
+}
