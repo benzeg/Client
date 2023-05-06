@@ -19,6 +19,7 @@ class Client : public INDI::BaseClient
         bool takenExposure = false;
         char *frameBuffer = nullptr;
         void setStreamExposure(double seconds);
+        void onBlobUpdated(INDI::PropertyBlob property);
 
     public:
         void setGain(double value);
@@ -37,6 +38,7 @@ class Client : public INDI::BaseClient
         void toggleStream();
         void setExposure(double seconds);
         void setCompression(char *status);      
+        void setROI(int x, int y, int width, int height);
 
     protected:
         void newMessage(INDI::BaseDevice baseDevice, int messageID) override;

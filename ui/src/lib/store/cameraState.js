@@ -59,3 +59,15 @@ window.syncVideoStreamOn = (value) => {
   console.log("syncVideoStream", value);
   videoStreamOn.set(value);
 }
+
+export const roi = writable({
+  x: 0,
+  y: 0,
+  width: 1920,
+  height: 1080
+});
+window.syncROI = (x,y,width,height) => {
+  const value = { x, y, width, height };
+  console.log("syncROI", value);
+  roi.set(value);
+};

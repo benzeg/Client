@@ -36,9 +36,11 @@ int main(int argc , char *argv[]) {
   Client client("SVBONY SV305 0");
   client.connectServer();
   sleep(10);
+  client.setStreamEncoder("RAW");
   client.setCompression("INDI_ENABLED");
+  client.setROI(0, 0, 1000, 1000);
   //client.takeExposure(1);
-  client.toggleStream();
+  //client.toggleStream();
   std::cout << "Press Enter key to terminate the client.\n";
   std::cin.ignore();
 };
@@ -319,6 +321,23 @@ void Client::init()
       #endif
     }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
 
+    device.watchProperty("CCD_FRAME", [this](INDI::PropertyNumber property)
+    {
+      auto x = property.findWidgetByName("X")->getValue();
+      auto y = property.findWidgetByName("Y")->getValue();
+      auto width = property.findWidgetByName("WIDTH")->getValue();
+      auto height = property.findWidgetByName("HEIGHT")->getValue();
+
+      #ifdef __DEBUG__
+      IDLog("Frame changed to x: %f  y: %f width: %f height: %f\n", x, y, width, height);
+      #endif
+
+      #ifdef __EMSCRIPTEN__
+      MAIN_THREAD_EM_ASM({
+        syncROI($0, $1, $2, $3);
+      }, x, y, width, height);
+      #endif
+    }, INDI::BaseDevice::WATCH_NEW_OR_UPDATE);
   });
 }
 
@@ -336,7 +355,7 @@ void Client::newMessage(INDI::BaseDevice baseDevice, int messageID)
     #endif
 }
 
-void onBlobUpdated(INDI::PropertyBlob property)
+void Client::onBlobUpdated(INDI::PropertyBlob property)
 {
   IDLog("Received image");
   auto blob = property[0].getBlob();
@@ -345,6 +364,10 @@ void onBlobUpdated(INDI::PropertyBlob property)
   auto format = property[0].getFormat();
   IDLog("format: %s", format);
 
+  INDI::PropertyNumber streamFrame = mSimpleCCD.getProperty("CCD_FRAME");
+
+  auto frameWidth = streamFrame.findWidgetByName("WIDTH")->getValue();
+  auto frameHeight = streamFrame.findWidgetByName("HEIGHT")->getValue();
   // .stream.z
   if (strcmp(format, ".stream.z") == 0) {
     #ifdef __DEBUG__
@@ -381,8 +404,9 @@ void onBlobUpdated(INDI::PropertyBlob property)
     auto const beforeDemosaic = std::chrono::steady_clock::now();
     #endif
 
-    auto decompressed = cv::Mat(1080, 1920, CV_8UC1, decompressedFrame.data());
-    auto output = cv::Mat(1080, 1920, CV_8UC4);
+    auto decompressed = cv::Mat(frameHeight, frameWidth, CV_8UC1, decompressedFrame.data());
+    auto output = cv::Mat(frameHeight, frameWidth, CV_8UC4);
+
     cv::cvtColor(decompressed, output, cv::COLOR_BayerGB2RGBA);
 
     uchar * arr = output.isContinuous()? output.data: output.clone().data;
@@ -401,11 +425,15 @@ void onBlobUpdated(INDI::PropertyBlob property)
       updateImage($0, $1, $2);
     }, arr, length, format);
     #else
-      std::ofstream myfile;
-      myfile.open("ccd_simulator", std::ios::out | std::ios::binary);
-      myfile.write(reinterpret_cast<char *>(decompressedFrame.data()), 1920 * 1080);
-      myfile.close(); 
+      std::ofstream decompressedFile;
+      decompressedFile.open("ccd_simulator_decompressed", std::ios::out | std::ios::binary);
+      decompressedFile.write(reinterpret_cast<char *>(decompressedFrame.data()), frameHeight * frameWidth);
+      decompressedFile.close(); 
 
+      std::ofstream demosaicedFile;
+      demosaicedFile.open("ccd_simulator_demosaiced", std::ios::out | std::ios::binary);
+      demosaicedFile.write(reinterpret_cast<char *>(arr), length);
+      demosaicedFile.close(); 
     #endif
   } else if(strcmp(format, ".stream") == 0) {
     // demosaic
@@ -413,8 +441,8 @@ void onBlobUpdated(INDI::PropertyBlob property)
     auto const beforeDemosaic = std::chrono::steady_clock::now();
     #endif
 
-    auto depressed = cv::Mat(1080, 1920, CV_8UC1, blob);
-    auto output = cv::Mat(1080, 1920, CV_8UC4);
+    auto depressed = cv::Mat(frameHeight, frameWidth, CV_8UC1, blob);
+    auto output = cv::Mat(frameHeight, frameWidth, CV_8UC4);
     cv::cvtColor(depressed, output, cv::COLOR_BayerGB2RGBA);
 
     uchar * arr = output.isContinuous()? output.data: output.clone().data;
@@ -659,4 +687,25 @@ void Client::setCompression(char *status)
   compressionSwitch->setState(ISS_ON);
 
   sendNewSwitch(ccdCompression);
+};
+
+void Client::setROI(int x = 0, int y = 0, int width = 1920, int height = 1080)
+{
+  INDI::PropertyNumber streamFrame = mSimpleCCD.getProperty("CCD_FRAME");
+
+  #ifdef __DEBUG__  
+  IDLog("Setting stream frame to x: %d  y: %d width: %d height: %d\n", x, y, width, height);
+  #endif
+
+  auto xNP = streamFrame.findWidgetByName("X");
+  auto yNP = streamFrame.findWidgetByName("Y");
+  auto widthNP = streamFrame.findWidgetByName("WIDTH");
+  auto heightNP = streamFrame.findWidgetByName("HEIGHT");
+
+  xNP->setValue(x);
+  yNP->setValue(y);
+  widthNP->setValue(width);
+  heightNP->setValue(height);
+  sendNewNumber(streamFrame);
+
 };
