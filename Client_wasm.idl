@@ -17,4 +17,5 @@ interface Client {
   void setExposure(double seconds);
   void setCompression(DOMString status);
   void setStreamEncoder(DOMString encoder);
+  void setROI(long x, long y, long width, long height);
 };

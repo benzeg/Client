@@ -1,7 +1,6 @@
 <script>
   import { Label } from 'flowbite-svelte'
-import MainControlRange from '../components/MainControlRange.svelte'
-  import { get } from 'svelte/store' 
+  import MainControlRange from '../components/MainControlRange.svelte'
   import { contrast } from '../store/cameraState.js'
   let value = 0;
 
