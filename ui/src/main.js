@@ -1,8 +1,9 @@
 import "./app.postcss";
 import App from "./App.svelte";
 
-const app = new App({
+window.addEventListener('DOMContentLoaded', () => {
+  console.log("DOMContentLoaded")
+  new App({
   target: document.getElementById("main"),
 });
-
-export default app;
+});
