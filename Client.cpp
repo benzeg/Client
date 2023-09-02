@@ -357,12 +357,14 @@ void Client::newMessage(INDI::BaseDevice baseDevice, int messageID)
 
 void Client::onBlobUpdated(INDI::PropertyBlob property)
 {
-  IDLog("Received image");
+  IDLog("Received image\n");
   auto blob = property[0].getBlob();
+  IDLog("blob: %d\n", blob);
   auto blobLen = property[0].getBlobLen();
+  IDLog("blobLen: %d\n", blobLen);
   auto size = property[0].getSize();
   auto format = property[0].getFormat();
-  IDLog("format: %s", format);
+  IDLog("format: %s\n", format);
 
   INDI::PropertyNumber streamFrame = mSimpleCCD.getProperty("CCD_FRAME");
 
@@ -370,10 +372,6 @@ void Client::onBlobUpdated(INDI::PropertyBlob property)
   auto frameHeight = streamFrame.findWidgetByName("HEIGHT")->getValue();
   // .stream.z
   if (strcmp(format, ".stream.z") == 0) {
-    #ifdef __DEBUG__
-    IDLog("Received compressed image");
-    #endif
-
     // decompress
     #ifdef __BENCHMARK__
     auto const before = std::chrono::steady_clock::now();
@@ -389,8 +387,8 @@ void Client::onBlobUpdated(INDI::PropertyBlob property)
     #ifdef __BENCHMARK__
     auto const after = std::chrono::steady_clock::now();
     auto const duration = std::chrono::duration_cast <std::chrono::nanoseconds> (after - before).count();
-    IDLog("Before compress size: %d\n", blobLen);
-    IDLog("After compress size: %d\n", nbytes);
+    IDLog("Before decompress size: %d\n", blobLen);
+    IDLog("After decompress size: %d\n", nbytes);
     IDLog("Decompression took %d nanoseconds\n", duration);
     #endif
 
@@ -464,7 +462,7 @@ void Client::onBlobUpdated(INDI::PropertyBlob property)
   } else {
     #ifdef __EMSCRIPTEN__
     MAIN_THREAD_EM_ASM({
-      updateImage($0, $1, $2);
+      updateVideo($0, $1, $2);
     }, blob, blobLen, format);
     #endif
     
