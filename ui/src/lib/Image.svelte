@@ -17,6 +17,10 @@
     renderImage(blobP, blobLen);    
   }
 
+  window.updateVideo = (blobP, blobLen, formatP) => {
+    renderVideo(blobP, blobLen);
+  }
+
   function renderImage(blobP, blobLen) {
     const fileBody = new Uint8ClampedArray(window.Module.HEAPU8.slice(blobP, blobP + blobLen));
     const canvas = document.getElementById('canvas');
@@ -24,6 +28,15 @@
     const {width} = get(roi);
     const imageData = new ImageData(fileBody, width);
     ctx.putImageData(imageData, 0, 0);
+  }
+
+  function renderVideo(blobP, blobLen) {
+    const fileBody = new Uint8ClampedArray(window.Module.HEAPU8.slice(blobP, blobP + blobLen));
+    let frame = URL.createObjectURL(new Blob([fileBody], {type: 'image/jpg'})) 
+    image.src = frame;
+    setTimeout(()=> {
+      URL.revokeObjectURL(frame);
+    },250);
   }
 
 </script>

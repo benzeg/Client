@@ -4,6 +4,6 @@ import App from "./App.svelte";
 window.addEventListener('DOMContentLoaded', () => {
   console.log("DOMContentLoaded")
   new App({
-  target: document.getElementById("main"),
-});
+    target: document.getElementById("main"),
+  });
 });
