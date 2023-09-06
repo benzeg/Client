@@ -38,9 +38,9 @@ int main(int argc , char *argv[]) {
   sleep(10);
   client.setStreamEncoder("RAW");
   client.setCompression("INDI_ENABLED");
-  client.setROI(0, 0, 1000, 1000);
+  client.setROI(0, 0, 680, 680);
   //client.takeExposure(1);
-  //client.toggleStream();
+  client.toggleStream();
   std::cout << "Press Enter key to terminate the client.\n";
   std::cin.ignore();
 };
