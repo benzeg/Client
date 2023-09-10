@@ -439,9 +439,9 @@ void Client::onBlobUpdated(INDI::PropertyBlob property)
     auto const beforeDemosaic = std::chrono::steady_clock::now();
     #endif
 
-    auto depressed = cv::Mat(frameHeight, frameWidth, CV_8UC1, blob);
+    auto decompressed = cv::Mat(frameHeight, frameWidth, CV_8UC1, blob);
     auto output = cv::Mat(frameHeight, frameWidth, CV_8UC4);
-    cv::cvtColor(depressed, output, cv::COLOR_BayerGB2RGBA);
+    cv::cvtColor(decompressed, output, cv::COLOR_BayerGB2RGBA);
 
     uchar * arr = output.isContinuous()? output.data: output.clone().data;
     uint length = output.total()*output.channels();
