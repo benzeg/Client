@@ -24,8 +24,17 @@
     console.log(e.target.value);
     deviceId.set(e.target.value);
   }
+
+  let value = null;
+  deviceId.subscribe((v) => {
+    value = v;
+  });
+
+
 </script>
 <Select
   items={DEVICE_IDS}
+  value={value}
   on:change={handleChange}>
 </Select>
+
