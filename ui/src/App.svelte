@@ -1,6 +1,7 @@
 <script>
   import Image from './lib/Image.svelte'
-  import Client from './lib/Client.svelte'
+  import DeviceSelect from './lib/DeviceSelect.svelte'
+  import DeviceConnect from './lib/DeviceConnect.svelte';
   import Exposure from './lib/Exposure.svelte'
   import ExposureBtn from './lib/ExposureBtn.svelte';
   import ControlDrawer from './lib/ControlDrawer.svelte';
@@ -8,7 +9,8 @@
 </script>
 
 <main class="flex flex-col items-center">
-  <Client />
+  <DeviceSelect />
+  <DeviceConnect />
   <Image />
   <div class="w-full flex justify-evenly items-center">
     <Exposure />

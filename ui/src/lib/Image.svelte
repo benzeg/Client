@@ -41,7 +41,7 @@
 
 </script>
 
-<canvas id="canvas" class="w-full md:w-2/4"/>
+<!--<canvas id="canvas" class="w-full md:w-2/4"/> -->
 <!--<div id="debug"/> -->
 <img id="image" class="w-full md:w-2/4" />
 <style>
